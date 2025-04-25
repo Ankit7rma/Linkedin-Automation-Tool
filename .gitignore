@@ -12,7 +12,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Ignore node_modules and build outputs
+ # Ignore node_modules and build outputs
 node_modules
 dist
 dist-ssr
