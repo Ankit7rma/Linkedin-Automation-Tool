@@ -1,72 +1,266 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* LinkedIn Marketing Tool CSS */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --linkedin-blue: #0A66C2;
+  --linkedin-blue-dark: #004182;
+  --linkedin-blue-light: #e8f3ff;
+  --slate-100: #F3F2EF;
+  --slate-200: #E9E5DF;
+  --slate-300: #DCDCDC;
+  --slate-800: #333333;
+  --slate-900: #191919;
+  --success-color: #057642;
+  --success-bg: #e6f7ee;
+  --warning-color: #915930;
+  --warning-bg: #fff8e6;
+  --error-color: #b74134;
+  --error-bg: #ffede8;
+  --white: #ffffff;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  
+  --transition: all 0.2s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--slate-900);
+  background-color: var(--slate-100);
   line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+.app-container {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background-color: var(--slate-100);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.app-card {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  transition: var(--transition);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+.app-header {
+  padding: 24px 32px;
+  background-color: var(--linkedin-blue);
+  color: var(--white);
+  position: relative;
+}
+
+.app-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.app-header p {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.content-section {
+  padding: 32px;
+}
+
+.welcome-banner {
+  padding: 16px;
+  background-color: var(--linkedin-blue-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.welcome-banner p {
+  color: var(--slate-800);
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  margin-left: 8px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--slate-900);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--slate-800);
+}
+
+.form-input, 
+.form-textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius-md);
+  background-color: var(--white);
+  transition: var(--transition);
+}
+
+.form-textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.form-input:focus, 
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--linkedin-blue);
+  box-shadow: 0 0 0 2px rgba(10, 102, 194, 0.2);
+}
+
+.form-input::placeholder, 
+.form-textarea::placeholder {
+  color: #999;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  cursor: pointer;
+  border: none;
+}
+
+.button-primary {
+  background-color: var(--linkedin-blue);
+  color: var(--white);
+}
+
+.button-primary:hover {
+  background-color: var(--linkedin-blue-dark);
+  transform: translateY(-1px);
+}
+
+.button-primary:active {
+  transform: translateY(0);
+}
+
+.sign-in-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--linkedin-blue);
+  color: var(--white);
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: var(--transition);
+  box-shadow: var(--shadow-md);
+}
+
+.sign-in-button:hover {
+  background-color: var(--linkedin-blue-dark);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.sign-in-button:active {
+  transform: translateY(0);
+}
+
+.section-divider {
+  height: 1px;
+  background-color: var(--slate-200);
+  margin: 28px 0;
+}
+
+.idea-section {
+  margin-top: 28px;
+}
+
+.idea-result {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: var(--linkedin-blue-light);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--linkedin-blue);
+}
+
+.idea-result h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--linkedin-blue-dark);
+}
+
+.idea-result p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--slate-800);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Responsive Styles */
+@media (max-width: 640px) {
+  .app-card {
+    box-shadow: none;
+    border-radius: 0;
   }
-  a:hover {
-    color: #747bff;
+  
+  .content-section {
+    padding: 24px 20px;
   }
-  button {
-    background-color: #f9f9f9;
+  
+  .app-header {
+    padding: 20px;
+  }
+  
+  .button {
+    width: 100%;
   }
 }

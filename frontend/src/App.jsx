@@ -1,7 +1,7 @@
-/* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import "./App.css"
+
 function App() {
   const [user, setUser] = useState(null);
   const [content, setContent] = useState('');
@@ -9,7 +9,7 @@ function App() {
   const [niche, setNiche] = useState('');
   const [idea, setIdea] = useState('');
 
-  // Check for user on load
+ 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('user_id');
@@ -18,8 +18,7 @@ function App() {
       setUser({ id: userId, name: decodeURIComponent(name) });
     }
   }, []);
-
-  // Schedule post
+ 
   const schedulePost = async () => {
     if (!content || !scheduledTime) {
       alert('Please enter content and scheduled time');
@@ -50,67 +49,99 @@ function App() {
       const response = await axios.post('http://localhost:3000/generate-idea', { niche }, { withCredentials: true });
       setIdea(response.data.idea);
     } catch (error) {
-      alert('Failed to generate idea');
+      console.log(error.message)
     }
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>LinkedIn Marketing Tool</h1>
-      {!user ? (
-        <div>
-          <p>Please sign in to continue.</p>
-          <a
-            href="http://localhost:3000/auth/linkedin"
-            style={{ padding: '10px 20px', background: '#0077b5', color: 'white', textDecoration: 'none', borderRadius: '5px' }}
-          >
-            Sign in with LinkedIn
-          </a>
+    <div className="app-container">
+      <div className="app-card">
+        <div className="app-header">
+          <h1>LinkedIn Marketing Tool</h1>
+          <p>Schedule and generate engaging content for your professional network</p>
         </div>
-      ) : (
-        <div>
-          <p>Welcome, {user.name}!</p>
-          <h2>Schedule a Post</h2>
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder="Enter your post content"
-            style={{ width: '100%', height: '100px', marginBottom: '10px' }}
-          />
-          <input
-            type="datetime-local"
-            value={scheduledTime}
-            onChange={e => setScheduledTime(e.target.value)}
-            style={{ width: '100%', marginBottom: '10px' }}
-          />
-          <button
-            onClick={schedulePost}
-            style={{ padding: '10px 20px', background: '#0077b5', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-          >
-            Schedule Post
-          </button>
-
-          <h2>Generate Post Idea</h2>
-          <input
-            value={niche}
-            onChange={e => setNiche(e.target.value)}
-            placeholder="Enter niche (e.g., marketing)"
-            style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
-          />
-          <button
-            onClick={generateIdea}
-            style={{ padding: '10px 20px', background: '#0077b5', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-          >
-            Generate Idea
-          </button>
-          {idea && (
-            <div style={{ marginTop: '20px' }}>
-              <h3>Generated Idea:</h3>
-              <p>{idea}</p>
+        
+        <div className="content-section">
+          {!user ? (
+            <div className="sign-in-section fade-in">
+              <p>Please sign in with your LinkedIn account to continue.</p>
+              <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <a
+                  href="http://localhost:3000/auth/linkedin"
+                  className="sign-in-button"
+                >
+                  Sign in with LinkedIn
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="fade-in">
+              <div className="welcome-banner">
+                <p>Welcome, {user.name}!</p>
+              </div>
+              
+              <div>
+                <h2 className="section-title">Schedule a Post</h2>
+                <div className="form-group">
+                  <label className="form-label">Post Content</label>
+                  <textarea
+                    className="form-textarea"
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    placeholder="Enter your post content"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Schedule Time</label>
+                  <input
+                    type="datetime-local"
+                    className="form-input"
+                    value={scheduledTime}
+                    onChange={e => setScheduledTime(e.target.value)}
+                  />
+                </div>
+                
+                <button
+                  className="button button-primary"
+                  onClick={schedulePost}
+                >
+                  Schedule Post
+                </button>
+              </div>
+              
+              <div className="section-divider"></div>
+              
+              <div className="idea-section">
+                <h2 className="section-title">Generate Post Idea</h2>
+                <div className="form-group">
+                  <label className="form-label">Niche / Industry</label>
+                  <input
+                    className="form-input"
+                    value={niche}
+                    onChange={e => setNiche(e.target.value)}
+                    placeholder="Enter niche (e.g., marketing, tech, finance)"
+                  />
+                </div>
+                
+                <button
+                  className="button button-primary"
+                  onClick={generateIdea}
+                >
+                  Generate Idea
+                </button>
+                
+                {idea && (
+                  <div className="idea-result fade-in">
+                    <h3>Generated Idea:</h3>
+                    <p>{idea}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
