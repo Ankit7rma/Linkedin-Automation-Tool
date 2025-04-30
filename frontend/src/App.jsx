@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import "./App.css"
+import './App.css';
+import Scrap from '../components/scrap';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -9,7 +10,6 @@ function App() {
   const [niche, setNiche] = useState('');
   const [idea, setIdea] = useState('');
 
- 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('user_id');
@@ -18,18 +18,42 @@ function App() {
       setUser({ id: userId, name: decodeURIComponent(name) });
     }
   }, []);
- 
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3000/logout', {
+        method: 'POST',
+        credentials: 'include', // Important for cookies
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+  
+      localStorage.clear();
+      sessionStorage.clear();
+      setUser(null);
+      window.location.href = '/'; // or force reload
+    } catch (error) {
+      alert('Logout failed');
+      console.error(error);
+    }
+  };
+  
+
   const schedulePost = async () => {
     if (!content || !scheduledTime) {
       alert('Please enter content and scheduled time');
       return;
     }
     try {
-      await axios.post('http://localhost:3000/schedule-post', {
-        content,
-        scheduled_time: scheduledTime,
-        user_id: user.id,
-      }, { withCredentials: true });
+      await axios.post(
+        'http://localhost:3000/schedule-post',
+        {
+          content,
+          scheduled_time: scheduledTime,
+          user_id: user.id,
+        },
+        { withCredentials: true }
+      );
       alert('Post scheduled!');
       setContent('');
       setScheduledTime('');
@@ -39,17 +63,20 @@ function App() {
     }
   };
 
-  // Generate AI post idea
   const generateIdea = async () => {
     if (!niche) {
       alert('Please enter a niche');
       return;
     }
     try {
-      const response = await axios.post('http://localhost:3000/generate-idea', { niche }, { withCredentials: true });
+      const response = await axios.post(
+        'http://localhost:3000/generate-idea',
+        { niche },
+        { withCredentials: true }
+      );
       setIdea(response.data.idea);
     } catch (error) {
-      console.log(error.message)
+      console.log(error.message);
     }
   };
 
@@ -60,14 +87,14 @@ function App() {
           <h1>LinkedIn Marketing Tool</h1>
           <p>Schedule and generate engaging content for your professional network</p>
         </div>
-        
+
         <div className="content-section">
           {!user ? (
             <div className="sign-in-section fade-in">
               <p>Please sign in with your LinkedIn account to continue.</p>
               <div style={{ marginTop: '24px', textAlign: 'center' }}>
                 <a
-                  href="http://localhost:3000/auth/linkedin"
+                  href="http://localhost:3000/auth/linkedin?prompt=login"
                   className="sign-in-button"
                 >
                   Sign in with LinkedIn
@@ -76,10 +103,13 @@ function App() {
             </div>
           ) : (
             <div className="fade-in">
-              <div className="welcome-banner">
+              <div className="welcome-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <p>Welcome, {user.name}!</p>
+                <button className="button button-secondary" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
-              
+
               <div>
                 <h2 className="section-title">Schedule a Post</h2>
                 <div className="form-group">
@@ -91,7 +121,7 @@ function App() {
                     placeholder="Enter your post content"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Schedule Time</label>
                   <input
@@ -101,7 +131,7 @@ function App() {
                     onChange={e => setScheduledTime(e.target.value)}
                   />
                 </div>
-                
+
                 <button
                   className="button button-primary"
                   onClick={schedulePost}
@@ -109,9 +139,9 @@ function App() {
                   Schedule Post
                 </button>
               </div>
-              
+
               <div className="section-divider"></div>
-              
+
               <div className="idea-section">
                 <h2 className="section-title">Generate Post Idea</h2>
                 <div className="form-group">
@@ -123,14 +153,14 @@ function App() {
                     placeholder="Enter niche (e.g., marketing, tech, finance)"
                   />
                 </div>
-                
+
                 <button
                   className="button button-primary"
                   onClick={generateIdea}
                 >
                   Generate Idea
                 </button>
-                
+
                 {idea && (
                   <div className="idea-result fade-in">
                     <h3>Generated Idea:</h3>
@@ -138,6 +168,8 @@ function App() {
                   </div>
                 )}
               </div>
+
+              <Scrap />
             </div>
           )}
         </div>

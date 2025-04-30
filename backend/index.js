@@ -4,31 +4,39 @@ const mysql = require('mysql2/promise');
 const schedule = require('node-schedule');
 const cors = require('cors');
 require('dotenv').config();
-
+const puppeteer = require('puppeteer');
+const cheerio = require('cheerio');
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 
-// MySQL connection
+ 
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
   password: process.env.MYSQL_PASSWORD,
   database: 'linkedin_tool',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-// Environment variables
+ 
 const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
 const REDIRECT_URI = 'http://localhost:3000/callback';
 
-// OAuth authorization
+app.use(require('express-rate-limit')({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit to 100 requests
+}));
+
 app.get('/auth/linkedin', (req, res) => {
   const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=openid%20profile%20email%20w_member_social`;
   res.redirect(authUrl);
 });
 
-// OAuth callback
+ 
 app.get('/callback', async (req, res) => {
   const { code } = req.query;
   try {
@@ -72,7 +80,7 @@ app.get('/callback', async (req, res) => {
   }
 });
 
-// Get user info (for frontend)
+ 
 app.get('/user', async (req, res) => {
   const { user_id } = req.query; // Temporary, use auth middleware in production
   try {
@@ -87,7 +95,24 @@ app.get('/user', async (req, res) => {
   }
 });
 
-// Schedule post
+app.post('/logout', async (req, res) => {
+  const { user_id } = req.body;
+  if (!user_id) {
+    return res.status(400).json({ error: 'User ID required' });
+  }
+  try {
+    // Clear tokens for this user
+    await pool.query(
+      'UPDATE users SET access_token = NULL, refresh_token = NULL, token_expiry = NULL WHERE linkedin_id = ?',
+      [user_id]
+    );
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error.message);
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
+ 
 const authenticate = async (req, res, next) => {
     const { user_id } = req.body;
     if (!user_id) {
@@ -101,22 +126,14 @@ const authenticate = async (req, res, next) => {
     next();
   };
   
-  app.post('/schedule-post', async (req, res) => {
-    const { content, scheduled_time, user_id } = req.body;
-    console.log('Request body:', { content, scheduled_time, user_id });
+  app.post('/schedule-post', authenticate, async (req, res) => {
+    const { content, scheduled_time } = req.body;
+    const dbUserId = req.dbUserId;
     try {
-      if (!content || !scheduled_time || !user_id) {
+      if (!content || !scheduled_time) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
   
-      // Get user ID from linkedin_id
-      const [users] = await pool.query('SELECT id FROM users WHERE linkedin_id = ?', [user_id]);
-      if (!users.length) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      const dbUserId = users[0].id;
-  
-      // Format scheduled_time to MySQL DATETIME (YYYY-MM-DD HH:MM:SS)
       const formattedTime = new Date(scheduled_time).toISOString().slice(0, 19).replace('T', ' ');
   
       await pool.query(
@@ -129,7 +146,8 @@ const authenticate = async (req, res, next) => {
       res.status(500).json({ error: 'Failed to schedule post', details: error.message });
     }
   });
-// Publish scheduled posts
+  
+ 
 async function publishPost(post) {
     let [user] = await pool.query('SELECT * FROM users WHERE id = ?', [post.user_id]);
     if (!user.length) {
@@ -205,7 +223,7 @@ schedule.scheduleJob('*/1 * * * *', async () => {
   }
 });
 
-// Generate AI post idea
+
 app.post('/generate-idea', async (req, res) => {
   const { niche } = req.body;
   try {
@@ -220,5 +238,97 @@ app.post('/generate-idea', async (req, res) => {
     res.status(500).json({ error: 'Failed to generate idea' });
   }
 });
+
+async function scrapeLinkedInPosts(niche, maxPosts = 10) {
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  const url = `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(niche)}&sortBy=relevance`;
+
+  await page.goto(url, { waitUntil: 'networkidle2' });
+
+  // Scroll to load more posts
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // Use waitForSelector to wait for an element to ensure the page has loaded
+    await page.waitForSelector('div.feed-shared-update-v2', { visible: true });
+  }
+
+  const content = await page.content();
+  const $ = cheerio.load(content);
+  const posts = [];
+
+  $('div.feed-shared-update-v2').each((i, element) => {
+    if (i >= maxPosts) return false;
+
+    const author = $(element).find('span.feed-shared-actor__name').text().trim() || 'Unknown';
+    const contentText = $(element).find('span.break-words').text().trim() || '';
+    const likesText = $(element).find('span.social-details-social-counts__reactions-count').text().trim() || '0';
+    const commentsText = $(element).find('span.social-details-social-counts__comments').text().trim() || '0';
+
+    const likes = parseInt(likesText.replace(/\D/g, '')) || 0;
+    const comments = parseInt(commentsText.replace(/\D/g, '')) || 0;
+
+    posts.push({
+      postId: uuidv4(),
+      author,
+      content: contentText.length > 200 ? contentText.slice(0, 200) + '...' : contentText,
+      likes,
+      comments,
+      niche,
+    });
+  });
+
+  await browser.close();
+  console.log(posts)
+  return posts;
+}
+ 
+ 
+app.post('/api/scrape', async (req, res) => {
+  const { niche } = req.body;
+  console.log(niche)
+  if (!niche) return res.status(400).json({ error: 'Niche is required' });
+
+  try {
+    const posts = await scrapeLinkedInPosts(niche);
+    if (!posts.length) return res.status(404).json({ error: 'No posts found' });
+
+ 
+    const connection = await pool.getConnection();
+    try {
+      for (const post of posts) {
+        await connection.query(
+          'INSERT INTO posts (postId, author, content, likes, comments, niche) VALUES (?, ?, ?, ?, ?, ?)',
+          [post.postId, post.author, post.content, post.likes, post.comments, post.niche]
+        );
+      }
+    } finally {
+      connection.release();
+    }
+
+    res.json(posts);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Scraping failed' });
+  }
+});
+
+ 
+app.get('/api/posts/:niche', async (req, res) => {
+  const { niche } = req.params;
+  try {
+    const [posts] = await pool.query(
+      'SELECT * FROM posts WHERE niche = ? ORDER BY createdAt DESC LIMIT 10',
+      [niche]
+    );
+    res.json(posts);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch posts' });
+  }
+});
+
+
+
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
